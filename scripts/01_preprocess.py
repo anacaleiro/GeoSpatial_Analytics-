@@ -7,21 +7,12 @@ Outputs (EPSG:3763, GeoPackage):
   data/processed/health_facilities.gpkg - OSMnx hospitals/clinics as points
 """
 
-import sys
-import io
-
-# Force UTF-8 output so print() never trips on Unicode in filenames
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-
 from pathlib import Path
 
 import geopandas as gpd
 import osmnx as ox
 import pandas as pd
 
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
 PROJECT = Path(__file__).resolve().parent.parent
 CMET = PROJECT / "CMET"
 BGRI_GPKG = PROJECT / "Census" / "BGRI21_CONT" / "BGRI21_CONT.gpkg"
@@ -29,10 +20,10 @@ PROCESSED = PROJECT / "data" / "processed"
 PROCESSED.mkdir(parents=True, exist_ok=True)
 
 CRS = "EPSG:3763"
-LISBON_MUN_CODE = "1106"
+LISBON_MUN_CODE = "1106"  # INE municipality code for Lisboa
 
 # ---------------------------------------------------------------------------
-# 1. GTFS bus stops -> GeoDataFrame
+# 1. GTFS bus stops
 # ---------------------------------------------------------------------------
 print("=== 1. GTFS bus stops ===")
 stops_df = pd.read_csv(CMET / "stops.txt", dtype={"stop_id": str})
@@ -44,17 +35,16 @@ gdf_stops = gpd.GeoDataFrame(
 print(f"  Total stops in CMET: {len(gdf_stops)}")
 
 # ---------------------------------------------------------------------------
-# 2. INE Census + BGRI polygons -> parish-level GeoDataFrame
+# 2. BGRI census subsections -> parish polygons
 # ---------------------------------------------------------------------------
 print("=== 2. BGRI census polygons -> parishes ===")
-bgri = gpd.read_file(BGRI_GPKG)  # already EPSG:3763
+# BGRI is already in EPSG:3763; filter to Lisbon municipality only
+bgri = gpd.read_file(BGRI_GPKG)
 lisbon_bgri = bgri[bgri["DTMN21"] == LISBON_MUN_CODE].copy()
 print(f"  Lisbon census subsections: {len(lisbon_bgri)}")
 
-# Lisbon municipality boundary (used for clipping later)
 lisbon_boundary = lisbon_bgri.dissolve()
 
-# Dissolve subsections -> parish polygons, summing population variables
 pop_cols = [
     "N_INDIVIDUOS",
     "N_INDIVIDUOS_65_OU_MAIS",
@@ -66,26 +56,25 @@ pop_cols = [
     "N_AGREGADOS_DOMESTICOS_PRIVADOS",
     "N_ALOJAMENTOS_FAMILIARES",
 ]
-agg = {col: "sum" for col in pop_cols}
 parishes = (
     lisbon_bgri
-    .dissolve(by="DTMNFR21", aggfunc=agg)
+    .dissolve(by="DTMNFR21", aggfunc={col: "sum" for col in pop_cols})
     .reset_index()
     [["DTMNFR21"] + pop_cols + ["geometry"]]
 )
 print(f"  Parishes (freguesias): {len(parishes)}")
 
 # ---------------------------------------------------------------------------
-# 3. OSMnx health facilities -> clip to Lisbon
+# 3. OSMnx health facilities
 # ---------------------------------------------------------------------------
 print("=== 3. OSMnx health facilities ===")
-# OSMnx expects WGS84 geometry
+# OSMnx requires WGS84; reproject boundary before querying
 lisbon_geom_4326 = lisbon_boundary.to_crs("EPSG:4326").geometry.iloc[0]
 
 tags = {"amenity": ["hospital", "clinic", "doctors", "health_centre"]}
 try:
     gdf_health_raw = ox.features_from_polygon(lisbon_geom_4326, tags=tags)
-    # Reproject to EPSG:3763 then take centroids (more accurate in projected CRS)
+    # Centroid in projected CRS is more accurate than in geographic CRS
     gdf_health = gdf_health_raw.to_crs(CRS).copy()
     gdf_health["geometry"] = gdf_health.geometry.centroid
     gdf_health = gdf_health.reset_index(drop=True)
@@ -95,9 +84,7 @@ try:
 except Exception as exc:
     print(f"  WARNING: OSMnx query failed ({exc}). Saving empty layer.")
     gdf_health = gpd.GeoDataFrame(
-        columns=["amenity", "name", "geometry"],
-        geometry="geometry",
-        crs=CRS,
+        columns=["amenity", "name", "geometry"], geometry="geometry", crs=CRS
     )
 
 # ---------------------------------------------------------------------------
@@ -109,13 +96,10 @@ gdf_stops_lisbon = gdf_stops[gdf_stops.geometry.within(lisbon_poly)].copy()
 print(f"  Stops within Lisbon: {len(gdf_stops_lisbon)}")
 
 # ---------------------------------------------------------------------------
-# 5. Save GeoPackages
+# 5. Save
 # ---------------------------------------------------------------------------
 print("=== 5. Saving GeoPackages ===")
 gdf_stops_lisbon.to_file(PROCESSED / "bus_stops.gpkg", driver="GPKG")
-print("  bus_stops.gpkg saved")
 parishes.to_file(PROCESSED / "parishes.gpkg", driver="GPKG")
-print("  parishes.gpkg saved")
 gdf_health.to_file(PROCESSED / "health_facilities.gpkg", driver="GPKG")
-print("  health_facilities.gpkg saved")
 print("Done.")
