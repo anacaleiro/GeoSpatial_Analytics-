@@ -57,7 +57,7 @@ def save_map(fig, name):
 
 # Map 1 - Elderly population share
 print("=== Map 1: Elderly distribution ===")
-fig, x = plt.subplots(figsize=FIG_SIZE)
+fig, ax = plt.subplots(figsize=FIG_SIZE)
 parishes.plot(
     ax=ax,
     column="elderly_share",
