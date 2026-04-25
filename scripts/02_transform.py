@@ -16,25 +16,22 @@ PROJECT = Path(__file__).resolve().parent.parent
 CMET = PROJECT / "CMET"
 PROCESSED = PROJECT / "data" / "processed"
 
-# ---------------------------------------------------------------------------
+
 # 1. Load preprocessed layers
-# ---------------------------------------------------------------------------
 print("=== 1. Loading layers ===")
 gdf_stops = gpd.read_file(PROCESSED / "bus_stops.gpkg")
 parishes = gpd.read_file(PROCESSED / "parishes.gpkg")
 print(f"  Stops: {len(gdf_stops)}  |  Parishes: {len(parishes)}")
 
-# ---------------------------------------------------------------------------
+
 # 2. 800 m buffer + dissolve -> unified coverage surface
-# ---------------------------------------------------------------------------
 print("=== 2. 800 m buffer + dissolve ===")
 # 800 m ~ 10-minute walk; dissolve merges overlapping buffers into one polygon
 coverage_union = gdf_stops.geometry.buffer(800).union_all()
 print("  Coverage surface computed.")
 
-# ---------------------------------------------------------------------------
+
 # 3. Coverage ratio per parish (intersection area / parish area)
-# ---------------------------------------------------------------------------
 print("=== 3. Coverage ratio per parish ===")
 parishes["coverage_area_m2"] = parishes.geometry.intersection(coverage_union).area
 parishes["parish_area_m2"] = parishes.geometry.area
@@ -42,9 +39,8 @@ parishes["coverage_ratio"] = (
     parishes["coverage_area_m2"] / parishes["parish_area_m2"]
 ).clip(0, 1)
 
-# ---------------------------------------------------------------------------
+
 # 4. GTFS service frequency per stop (07:00-21:00)
-# ---------------------------------------------------------------------------
 print("=== 4. GTFS frequency 07:00-21:00 ===")
 stop_times = pd.read_csv(
     CMET / "stop_times.txt",
@@ -64,9 +60,8 @@ print(f"  Daytime departures counted for {len(freq_per_stop)} stops.")
 gdf_stops = gdf_stops.merge(freq_per_stop, on="stop_id", how="left")
 gdf_stops["n_departures"] = gdf_stops["n_departures"].fillna(0)
 
-# ---------------------------------------------------------------------------
+
 # 5. Mean frequency per parish (spatial join stops -> parishes)
-# ---------------------------------------------------------------------------
 print("=== 5. Mean frequency per parish ===")
 stops_in_parishes = gpd.sjoin(
     gdf_stops[["stop_id", "n_departures", "geometry"]],
@@ -83,9 +78,8 @@ mean_freq = (
 parishes = parishes.merge(mean_freq, on="DTMNFR21", how="left")
 parishes["mean_departures"] = parishes["mean_departures"].fillna(0)
 
-# ---------------------------------------------------------------------------
+
 # 6. Save
-# ---------------------------------------------------------------------------
 print("=== 6. Saving parishes_enriched.gpkg ===")
 parishes.to_file(PROCESSED / "parishes_enriched.gpkg", driver="GPKG")
 print("Done.")

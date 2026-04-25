@@ -40,9 +40,8 @@ COLORBAR_STYLE = {
     "pad": 0.02,
 }
 
-# ---------------------------------------------------------------------------
-# Load
-# ---------------------------------------------------------------------------
+
+# Load 
 print("Loading data...")
 parishes = gpd.read_file(PROCESSED / "parishes_final.gpkg")
 health = gpd.read_file(PROCESSED / "health_facilities.gpkg")
@@ -55,11 +54,10 @@ def save_map(fig, name):
     print(f"  Saved: {path.name}")
 
 
-# ---------------------------------------------------------------------------
+
 # Map 1 - Elderly population share
-# ---------------------------------------------------------------------------
 print("=== Map 1: Elderly distribution ===")
-fig, ax = plt.subplots(figsize=FIG_SIZE)
+fig, x = plt.subplots(figsize=FIG_SIZE)
 parishes.plot(
     ax=ax,
     column="elderly_share",
@@ -81,9 +79,7 @@ ax.set_title(
 ax.set_axis_off()
 save_map(fig, "map1_elderly.png")
 
-# ---------------------------------------------------------------------------
-# Map 2 - Transit coverage ratio
-# ---------------------------------------------------------------------------
+#Map 2 - Transit coverage ratio
 print("=== Map 2: Transit coverage ===")
 fig, ax = plt.subplots(figsize=FIG_SIZE)
 parishes.plot(
@@ -106,9 +102,8 @@ ax.set_title(
 ax.set_axis_off()
 save_map(fig, "map2_coverage.png")
 
-# ---------------------------------------------------------------------------
+
 # Map 3 - Mean service frequency
-# ---------------------------------------------------------------------------
 print("=== Map 3: Service frequency ===")
 fig, ax = plt.subplots(figsize=FIG_SIZE)
 parishes.plot(
@@ -130,9 +125,8 @@ ax.set_title(
 ax.set_axis_off()
 save_map(fig, "map3_frequency.png")
 
-# ---------------------------------------------------------------------------
+
 # Map 4 - Composite index (main output)
-# ---------------------------------------------------------------------------
 print("=== Map 4: Accessibility index ===")
 class_colours = {
     "Low":      "#1a9641",
@@ -163,9 +157,8 @@ ax.set_axis_off()
 save_map(fig, "map4_index.png")
 parishes.drop(columns=["_colour"], inplace=True)
 
-# ---------------------------------------------------------------------------
+
 # Ranked parishes table
-# ---------------------------------------------------------------------------
 print("=== Table: Ranked parishes ===")
 table = (
     parishes[[
