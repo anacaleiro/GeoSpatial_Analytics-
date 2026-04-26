@@ -60,6 +60,33 @@ pop_cols = [
     "N_AGREGADOS_DOMESTICOS_PRIVADOS",
     "N_ALOJAMENTOS_FAMILIARES",
 ]
+PARISH_NAMES = {
+    "110601": "Ajuda",
+    "110602": "Alcântara",
+    "110607": "Beato",
+    "110608": "Benfica",
+    "110610": "Campolide",
+    "110611": "Carnide",
+    "110618": "Lumiar",
+    "110621": "Marvila",
+    "110633": "Olivais",
+    "110639": "São Domingos de Benfica",
+    "110654": "Alvalade",
+    "110655": "Areeiro",
+    "110656": "Arroios",
+    "110657": "Avenidas Novas",
+    "110658": "Belém",
+    "110659": "Campo de Ourique",
+    "110660": "Estrela",
+    "110661": "Misericórdia",
+    "110662": "Parque das Nações",
+    "110663": "Penha de França",
+    "110664": "Santa Clara",
+    "110665": "Santa Maria Maior",
+    "110666": "Santo António",
+    "110667": "São Vicente",
+}
+
 agg = {col: "sum" for col in pop_cols}
 parishes = (
     lisbon_bgri
@@ -67,6 +94,7 @@ parishes = (
     .reset_index()
     [["DTMNFR21"] + pop_cols + ["geometry"]]
 )
+parishes["parish_name"] = parishes["DTMNFR21"].map(PARISH_NAMES)
 print(f"  Parishes (freguesias): {len(parishes)}")
 
 
