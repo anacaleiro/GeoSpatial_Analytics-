@@ -122,6 +122,12 @@ mean_freq = (
 parishes = parishes.merge(mean_freq, on="DTMNFR21", how="left")
 parishes["mean_departures"] = parishes["mean_departures"].fillna(0)
 
+# Attach parish mean_departures to each stop for stop-level frequency mapping
+stops_with_parish = gpd.sjoin_nearest(
+    gdf_stops, parishes[["DTMNFR21", "mean_departures", "geometry"]], how="left"
+).drop(columns=["index_right"])
+stops_with_parish.to_file(PROCESSED / "bus_stops_freq.gpkg", driver="GPKG")
+
  
 # 8. Save
 print("=== 8. Saving parishes_enriched.gpkg ===")

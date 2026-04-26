@@ -47,3 +47,14 @@ gdf = ox.features_from_place(
   )
 cols = [c for c in ["name", "ref:ine"] if c in gdf.columns]
 print(gdf[cols].dropna(subset=["name"]).to_string())
+
+import geopandas as gpd
+
+parishes = gpd.read_file(r"C:\Users\X1605\Documents\GitHub\GeoSpatial_Analytics-\data\processed\parishes_final.gpkg")
+
+marvila = parishes[parishes["parish_name"] == "Marvila"]
+print(marvila[[
+      "parish_name", "rank", "criticality_label",
+      "elderly_share", "mean_departures", "coverage_ratio",
+  "composite_index"
+  ]].to_string())
