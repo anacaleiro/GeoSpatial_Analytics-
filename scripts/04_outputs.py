@@ -162,7 +162,7 @@ parishes.drop(columns=["_colour"], inplace=True)
 print("=== Table: Ranked parishes ===")
 table = (
     parishes[[
-        "rank", "DTMNFR21", "criticality_label", "composite_index",
+        "rank", "DTMNFR21", "parish_name", "criticality_label", "composite_index",
         "elderly_share", "coverage_ratio", "mean_departures",
         "N_INDIVIDUOS", "N_INDIVIDUOS_65_OU_MAIS",
     ]]
