@@ -112,7 +112,7 @@ parishes.plot(
     cmap="Greens",
     legend=True,
     legend_kwds={
-        "label": "Mean departures per stop (07:00-21:00)",
+        "label": "Mean scheduled trips per stop (07:00-21:00)",
         **COLORBAR_STYLE,
     },
     edgecolor="white",
@@ -156,6 +156,42 @@ ax.set_title(
 ax.set_axis_off()
 save_map(fig, "map4_index.png")
 parishes.drop(columns=["_colour"], inplace=True)
+
+
+# Bar chart - Ranked parishes by composite index
+print("=== Bar chart: Ranked parishes ===")
+BAR_COLOURS = {
+    "Low":      "#fed976",
+    "Moderate": "#fd8d3c",
+    "High":     "#e31a1c",
+    "Critical": "#800026",
+}
+
+ranked_bar = parishes.sort_values("composite_index", ascending=True)
+bar_colours = ranked_bar["criticality_label"].map(BAR_COLOURS).fillna("#cccccc")
+labels = ranked_bar["parish_name"].fillna(ranked_bar["DTMNFR21"])
+
+fig, ax = plt.subplots(figsize=(10, 8))
+bars = ax.barh(
+    y=range(len(ranked_bar)),
+    width=ranked_bar["composite_index"],
+    color=bar_colours,
+    edgecolor="white",
+    linewidth=0.4,
+)
+ax.set_yticks(range(len(ranked_bar)))
+ax.set_yticklabels(labels, fontsize=9)
+ax.set_xlabel("Composite Accessibility Index", fontsize=10)
+ax.set_title(
+    "Elderly Transit Accessibility — Ranked Parishes\nLisbon (higher = more critical)",
+    fontsize=13, fontweight="bold", pad=12,
+)
+
+patches = [mpatches.Patch(facecolor=c, label=lbl) for lbl, c in BAR_COLOURS.items()]
+ax.legend(handles=patches, title="Criticality Class", loc="lower right", fontsize=9)
+ax.spines[["top", "right"]].set_visible(False)
+
+save_map(fig, "map5_barchart.png")
 
 
 # Ranked parishes table
